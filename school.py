@@ -36,7 +36,7 @@ if __name__ == '__main__':
     sch2cdc.connect(addr_cdc)
     print('successfully build connection')
     #send pid
-    msg = str( os.getpid() )
+    msg = str( os.getpid())
     sch2cdc.send(msg.encode())
     
     #build socket with visitors
@@ -68,6 +68,8 @@ if __name__ == '__main__':
             try:
                 msg = usr.recv(1024).decode().strip()
                 print(msg)
+                sig = dict( usr.recv(1024).decode() )
+                print(sig)
                 #usr.send('')
                 usr.close()
                 usrs.remove(usr)

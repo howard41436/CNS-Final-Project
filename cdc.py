@@ -19,6 +19,7 @@ True
 def init():
     print('This is a CDC')
 
+
 if __name__ == '__main__':
     if len(sys.argv) != 3:
         print('$python3 cdc.py hostname port')
