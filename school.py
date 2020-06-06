@@ -6,10 +6,12 @@ from pwn import remote
 import sys
 import os
 import time
+import random
 
 BUILDINGS = {1: "DerTian", 2: "MingDa", 3: "XiaoFu"}
 GS_PROTOCOL = 'ShortSig'
 GROUP = PairingGroup('MNT224')
+RID_MAX = 10 ** 10
 
 def gettime():
     return time.strftime("%Y%m%d%H%M", time.localtime(time.time()))
@@ -25,8 +27,7 @@ class Oracle:
     def is_valid(self, msg):
         return True
 
-    def verify(self, msg_sig):
-        msg, signature = msg_sig.split(',')
+    def verify(self, msg, signature):
         signature = bytesToObject(signature, self.group)
         return self.is_valid(msg) and \
                self.gs_protocol.verify(self.gpk, msg, signature)
@@ -35,8 +36,22 @@ class School:
     def __init__(self):
         self.oracle = Oracle()
 
+    def record(self, msg, signature):
+        timestamp, building = msg.split('||')
+        rid = random.randrange(RID_MAX)
+        new_record = f'{rid}, {timestamp}, {building}, {signature}\n'
+        if not os.path.exists('database.csv'):
+            header = 'rid, timestamp, building, signature\n'
+            open('database.csv', 'w').write(header)
+        open('database.csv', 'a').write(new_record)
+
     def verify(self, msg_sig):
-        return self.oracle.verify(msg_sig)
+        msg, signature = msg_sig.split(',')
+        if self.oracle.verify(msg, signature):
+            self.record(msg, signature)
+            return True
+        else:
+            return False
 
 if __name__ == '__main__':
     school = School()
