@@ -1,23 +1,26 @@
-from charm.toolbox.pairinggroup import PairingGroup,ZR,G1,G2,GT,pair
+from charm.toolbox.pairinggroup import PairingGroup, ZR, G1, G2, GT, pair
 from charm.toolbox.PKSig import PKSig
-from charm.schemes.grpsig.groupsig_bgls04 import *
+from charm.schemes.grpsig.groupsig_bgls04 import ShortSig
+from charm.core.engine.util import objectToBytes, bytesToObject
+import os
 import pickle
-"""
->>> group = PairingGroup('MNT224')
->>> n = 3    # how manu users are in the group
->>> user = 1 # which user's key we will sign a message with
->>> shortSig = ShortSig(group)
->>> (global_public_key, global_master_secret_key, user_secret_keys) = shortSig.keygen(n)
->>> msg = 'Hello World this is a message!'
->>> signature = shortSig.sign(global_public_key, user_secret_keys[user], msg)
->>> shortSig.verify(global_public_key, msg, signature)
-True
-"""
 group = PairingGroup('MNT224')
-n = 100    # how manu users are in the group
-shortSig = ShortSig(group)
-(global_public_key, global_master_secret_key, user_secret_keys) = shortSig.keygen(n)
+USER_NUM = 100
+oracle = ShortSig(group)
+(gpk, gmsk, sks) = oracle.keygen(USER_NUM)
 
-#f = open("keygendata.py",'w')
-#f.write(f'global_public_key={global_public_key}\nglobal_master_secret_key={global_master_secret_key}\nuser_secret_keys={user_secret_keys}')
+path = 'parameters/shortsig'
 
+os.makedirs(f'{path}/public', exist_ok = True)
+os.makedirs(f'{path}/gm', exist_ok = True)
+for i in range(100):
+    os.makedirs(f'{path}/users/{i:02d}', exist_ok = True)
+
+open(f'{path}/public/gpk', 'wb').write(objectToBytes(gpk, group))
+open(f'{path}/gm/gmsk', 'wb').write(objectToBytes(gmsk, group))
+identity = {}
+for i in range(USER_NUM):
+    sk = objectToBytes(sks[i], group)
+    identity[sk] = i
+    open(f'{path}/users/{i:02d}/sk', 'wb').write(sk)
+pickle.dump(identity, open(f'{path}/gm/identity.pkl', 'wb'))
