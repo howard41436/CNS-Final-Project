@@ -4,10 +4,7 @@ from charm.core.engine.util import objectToBytes, bytesToObject
 from pwn import remote
 import sys
 import os
-import socket
-import time 
-import random
-import pickle
+import time
 
 BUILDINGS = {1: "DerTian", 2: "MingDa", 3: "XiaoFu"}
 GS_PROTOCOL = 'ShortSig'
@@ -30,7 +27,7 @@ class Oracle:
 
     def sign(self, msg):
         signature = self.gs_protocol.sign(self.gpk, self.sk, msg)
-        return signature
+        return objectToBytes(signature, self.group)
 
 class Student:
     def __init__(self, uid):
@@ -38,15 +35,16 @@ class Student:
         self.uid = uid
         self.school = remote(SCHOOL_IP, SCHOOL_PORT)
 
-    def authenticate(self, signature):
-        self.school.sendline(signature)
-        return self.school.recvline()
+    def authenticate(self, msg, signature):
+        payload = f'{msg},{signature.decode()}'.encode()
+        self.school.sendline(payload)
+        return self.school.recvline().decode().strip() == 'OK'
 
     def enter_building(self, build):
         current_time = gettime()
         msg = f'{build}||{current_time}'
         signature = self.oracle.sign(msg)
-        verdict = self.authenticate(signature)
+        verdict = self.authenticate(msg, signature)
         return verdict
 
 if __name__ == '__main__':
@@ -55,8 +53,8 @@ if __name__ == '__main__':
     print('Please enter the building you are entering:')
     for k in BUILDINGS:
         print(f'{k}) {BUILDINGS[k]}')
-    building = input()
-    verdict = student.enter_building(building)
+    building = int(input())
+    verdict = student.enter_building(BUILDINGS[building])
     if verdict:
         print('Entered the building successfully.')
     else:

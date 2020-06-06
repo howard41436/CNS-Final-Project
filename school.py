@@ -1,81 +1,48 @@
-from charm.toolbox.pairinggroup import PairingGroup,ZR,G1,G2,GT,pair
-from charm.toolbox.PKSig import PKSig
-from charm.schemes.grpsig.groupsig_bgls04 import *
+#!/usr/bin/env python3
+from charm.toolbox.pairinggroup import PairingGroup
+from charm.schemes.grpsig.groupsig_bgls04 import ShortSig
+from charm.core.engine.util import objectToBytes, bytesToObject
+from pwn import remote
 import sys
-import socket
-import time
 import os
-"""
->>> group = PairingGroup('MNT224')
->>> n = 3    # how manu users are in the group
->>> user = 1 # which user's key we will sign a message with
->>> shortSig = ShortSig(group)
->>> (global_public_key, global_master_secret_key, user_secret_keys) = shortSig.keygen(n)
->>> msg = 'Hello World this is a message!'
->>> signature = shortSig.sign(global_public_key, user_secret_keys[user], msg)
->>> shortSig.verify(global_public_key, msg, signature)
-True
-"""
+import time
 
+BUILDINGS = {1: "DerTian", 2: "MingDa", 3: "XiaoFu"}
+GS_PROTOCOL = 'ShortSig'
+GROUP = PairingGroup('MNT224')
 
-def init():
-    print('This is a school server')
+def gettime():
+    return time.strftime("%Y%m%d%H%M", time.localtime(time.time()))
+
+class Oracle:
+    def __init__(self):
+        self.group = PairingGroup('MNT224')
+        self.gs_protocol = eval(GS_PROTOCOL)(self.group)
+        self.path = f'parameters/{GS_PROTOCOL.lower()}'
+        gpk_path = os.path.join(self.path, 'public/gpk')
+        self.gpk = bytesToObject(open(gpk_path, 'rb').read(), self.group)
+
+    def is_valid(self, msg):
+        return True
+
+    def verify(self, msg_sig):
+        msg, signature = msg_sig.split(',')
+        signature = bytesToObject(signature, self.group)
+        return self.is_valid(msg) and \
+               self.gs_protocol.verify(self.gpk, msg, signature)
+
+class School:
+    def __init__(self):
+        self.oracle = Oracle()
+
+    def verify(self, msg_sig):
+        return self.oracle.verify(msg_sig)
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        print('$python3 school.py hostname port')
-        exit(0)
-    init()
-    #build socket with cdc
-    buf = input('{cdc ip} {cdc port} : ')
-    hostname_cdc = buf.split()[0]
-    port_cdc = int( buf.split()[1] )
-    addr_cdc = (hostname_cdc, port_cdc)
-
-    sch2cdc = socket.socket()
-    sch2cdc.connect(addr_cdc)
-    print('successfully build connection')
-    #send pid
-    msg = str( os.getpid())
-    sch2cdc.send(msg.encode())
-    
-    #build socket with visitors
-    hostname = sys.argv[1]
-    port = int( sys.argv[2] )
-    addr = (hostname, port)
-    srv = socket.socket()
-    try:
-        srv.bind(addr)
-        srv.setblocking(False)
-        srv.listen(10)
-    except:
-        print('Build socket fail!!')
-        exit(0)
-
-    #waiting connection
-    usrs=[]
-    while True:
-        try: 
-            usr, usr_addr = srv.accept()
-            print(f'new visitor from {usr_addr}\n {usr}')
-            # non-blocking 
-            usr.setblocking(False)
-            usrs.append(usr)
-        except:
-            pass
-            
-        for usr in usrs:
-            try:
-                msg = usr.recv(1024).decode().strip()
-                print(msg)
-                sig = dict( usr.recv(1024).decode() )
-                print(sig)
-                #usr.send('')
-                usr.close()
-                usrs.remove(usr)
-            except:
-                pass
-
-
-
-
+    school = School()
+    msg_sig = input()
+    verdict = school.verify(msg_sig)
+    if verdict:
+        print('OK')
+    else:
+        print('NO')
