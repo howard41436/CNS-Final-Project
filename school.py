@@ -37,11 +37,11 @@ class School:
         self.oracle = Oracle()
 
     def record(self, msg, signature):
-        timestamp, building = msg.split('||')
+        building, timestamp = msg.split('||')
         rid = random.randrange(RID_MAX)
-        new_record = f'{rid}, {timestamp}, {building}, {signature}\n'
+        new_record = f'{rid}, {building}, {timestamp}, {signature}\n'
         if not os.path.exists('database.csv'):
-            header = 'rid, timestamp, building, signature\n'
+            header = 'rid, building, timestamp, signature\n'
             open('database.csv', 'w').write(header)
         open('database.csv', 'a').write(new_record)
 

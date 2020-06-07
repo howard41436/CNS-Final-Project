@@ -38,17 +38,21 @@ class Oracle:
         dic_path = os.path.join(self.path, 'gm/identity.pkl')
         self.dic = pickle.load(open(dic_path, 'rb'))
     def open(self, msg, signature):
-        #signature = bytesToObject(signature, self.group)
+        signature = bytesToObject(signature, self.group)
         return self.gs_protocol.open(self.gpk, self.gmsk, msg, signature)
 class Cdc:
     def __init__(self):
         self.oracle = Oracle()
     def read_database(self):
-        return csv.reader(open('database.csv','r',newline=''))
+        return csv.reader(open('database.csv','r', newline=''))
     def find_patient_footprint(self, data, sickuid):
-        signature = data[3]
-        msg = f'{data[1]}||{data[2]}'
-        identifier = self.oracle.open(msg,signature)
+        signature = data[3][1:]
+        #print(signature)
+        msg = f'{data[1][1:]}||{data[2][1:]}'
+        #print(msg)
+        #print(self.oracle.dic)
+        identifier = objectToBytes(self.oracle.open(msg,signature), self.oracle.group)
+        #print(f'identifier = {identifier}')
         identity = self.oracle.dic[identifier]
         for i in sickuid:
             if i == identity:
@@ -61,11 +65,15 @@ if __name__ == '__main__':
     cdc = Cdc()
     patient_number = int(input('How many patients today? '))
     sickuid=[]
-    print("please enter the patient's uid: ")
+    print("please enter the patient's uid: ", end ='')
     for i in range(patient_number):
         sickuid.append(int(input()))
     database = cdc.read_database()
+    header = 1
     for data in database:
+        if header:
+            header = 0
+            continue
         danger = cdc.find_patient_footprint(data,sickuid)
         if danger:
             print(f'{data[1]}, {data[2]}')
