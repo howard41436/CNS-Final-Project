@@ -12,19 +12,6 @@ import csv
 BUILDINGS = {1: "DerTian", 2: "MingDa", 3: "XiaoFu"}
 GS_PROTOCOL = 'ShortSig'
 GROUP = PairingGroup('MNT224')
-"""
->>> group = PairingGroup('MNT224')
->>> n = 3    # how manu users are in the group
->>> user = 1 # which user's key we will sign a message with
->>> shortSig = ShortSig(group)
->>> (global_public_key, global_master_secret_key, user_secret_keys) = shortSig.keygen(n)
->>> msg = 'Hello World this is a message!'
->>> signature = shortSig.sign(global_public_key, user_secret_keys[user], msg)
->>> shortSig.verify(global_public_key, msg, signature)
-True
-"""
-def init():
-    print('This is a CDC')
 
 class Oracle:
     def __init__(self):
@@ -46,22 +33,14 @@ class Cdc:
     def read_database(self):
         return csv.reader(open('database.csv','r', newline=''))
     def find_patient_footprint(self, data, sickuid):
-        signature = data[3][1:]
-        #print(signature)
-        msg = f'{data[1][1:]}||{data[2][1:]}'
-        #print(msg)
-        #print(self.oracle.dic)
+        signature = data[3].strip()
+        msg = f'{data[1].strip()}||{data[2].strip()}'
         identifier = objectToBytes(self.oracle.open(msg,signature), self.oracle.group)
-        #print(f'identifier = {identifier}')
         identity = self.oracle.dic[identifier]
-        for i in sickuid:
-            if i == identity:
-                return 1
-        return 0
+        return (sickuid.count(identity) > 0)
 
 
 if __name__ == '__main__':
-    init()
     cdc = Cdc()
     patient_number = int(input('How many patients today? '))
     sickuid=[]
@@ -69,61 +48,9 @@ if __name__ == '__main__':
     for i in range(patient_number):
         sickuid.append(int(input()))
     database = cdc.read_database()
-    header = 1
+    # skip header
+    next(database)
     for data in database:
-        if header:
-            header = 0
-            continue
         danger = cdc.find_patient_footprint(data,sickuid)
         if danger:
             print(f'{data[1]}, {data[2]}')
-            
-              
-'''
-if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        print('$python3 cdc.py hostname port')
-        exit(0)
-    init()
-    #build socket
-    hostname = sys.argv[1]
-    port = int( sys.argv[2] )
-    addr = (hostname, port)
-    srv = socket.socket()
-    try:
-        srv.bind(addr)
-        srv.setblocking(False)
-        srv.listen(10)
-    except:
-        print('Build socket fail!!')
-        exit(0)
-
-    #waiting connection
-    usrs=[]
-    pids=[]
-    while True:
-        try: 
-            usr, usr_addr = srv.accept()
-            print(f'new school from {usr_addr}\n {usr}')
-            # non-blocking 
-            usr.setblocking(False)
-            usrs.append(usr)
-            pids.append(dict())
-        except:
-            pass
-            
-        for usr in usrs:
-            try:
-                msg = usr.recv(1024).decode().strip()
-                print(msg)
-                if not msg.isdigit():
-                    print('need school pid, a digit')
-                    exit(0)
-                pids[usr]=int(msg)
-                #usr.send('')
-                #usr.close()
-                #usrs.remove(usr)
-            except:
-                pass
-
-'''    
