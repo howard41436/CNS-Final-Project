@@ -12,6 +12,8 @@ BUILDINGS = {1: "DerTian", 2: "MingDa", 3: "XiaoFu"}
 GS_PROTOCOL = 'ShortSig'
 GROUP = PairingGroup('MNT224')
 RID_MAX = 10 ** 10
+CDC_IP = '127.0.0.1'
+CDC_PORT = 9898
 
 def gettime():
     return time.strftime("%Y%m%d%H%M", time.localtime(time.time()))
@@ -35,6 +37,7 @@ class Oracle:
 class School:
     def __init__(self):
         self.oracle = Oracle()
+        self.cdc = remote(CDC_IP, CDC_PORT)
 
     def record(self, msg, signature):
         building, timestamp = msg.split('||')

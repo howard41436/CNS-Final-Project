@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from charm.toolbox.pairinggroup import PairingGroup,ZR,G1,G2,GT,pair
 from charm.toolbox.PKSig import PKSig
 from charm.schemes.grpsig.groupsig_bgls04 import *
@@ -12,6 +13,10 @@ import csv
 BUILDINGS = {1: "DerTian", 2: "MingDa", 3: "XiaoFu"}
 GS_PROTOCOL = 'ShortSig'
 GROUP = PairingGroup('MNT224')
+RID_INEDX = 0
+BUILDING_INDEX = 1
+TIMESTAMP_INDEX = 2
+SIGNATURE_INDEX = 3
 
 class Oracle:
     def __init__(self):
@@ -33,8 +38,8 @@ class Cdc:
     def read_database(self):
         return csv.reader(open('database.csv','r', newline=''))
     def find_patient_footprint(self, data, sickuid):
-        signature = data[3].strip()
-        msg = f'{data[1].strip()}||{data[2].strip()}'
+        signature = data[SIGNATURE_INDEX].strip()
+        msg = f'{data[BUILDING_INDEX].strip()}||{data[TIMESTAMP_INDEX].strip()}'
         identifier = objectToBytes(self.oracle.open(msg,signature), self.oracle.group)
         identity = self.oracle.dic[identifier]
         return (sickuid.count(identity) > 0)
@@ -53,4 +58,4 @@ if __name__ == '__main__':
     for data in database:
         danger = cdc.find_patient_footprint(data,sickuid)
         if danger:
-            print(f'{data[1]}, {data[2]}')
+            print(f'{data[BUILDING_INDEX]}, {data[TIMESTAMP_INDEX]}')
