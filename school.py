@@ -6,14 +6,14 @@ from pwn import remote
 import sys
 import os
 import time
+import datetime
 import random
+import csv
 
 BUILDINGS = {1: "DerTian", 2: "MingDa", 3: "XiaoFu"}
 GS_PROTOCOL = 'ShortSig'
 GROUP = PairingGroup('MNT224')
 RID_MAX = 10 ** 10
-CDC_IP = '127.0.0.1'
-CDC_PORT = 9898
 
 def gettime():
     return time.strftime("%Y%m%d%H%M", time.localtime(time.time()))
@@ -37,7 +37,6 @@ class Oracle:
 class School:
     def __init__(self):
         self.oracle = Oracle()
-        self.cdc = remote(CDC_IP, CDC_PORT)
 
     def record(self, msg, signature):
         building, timestamp = msg.split('||')
@@ -55,12 +54,41 @@ class School:
             return True
         else:
             return False
+    
+    def read_database(self):
+        return csv.reader(open('database.csv','r', newline=''))
+
+    def send_data_to_cdc(self):
+        current_time = gettime()
+        current_time = f'{current_time[:4]}-{current_time[4:6]}-{current_time[6:8]}'
+        today = datetime.datetime.strptime(current_time,'%Y-%m-%d')
+        #today = datetime.date(int(current_time[:4]), current_time[4:6], int(current_time[6:8]))
+        database = self.read_database()
+        # skip header
+        next(database)
+        buf_data = []
+        cnt = 0
+        for data in database:
+            data[2] = data[2].strip()
+            tmp = f'{data[2][:4]}-{data[2][4:6]}-{data[2][6:8]}'
+            dataday = datetime.datetime.strptime(tmp,'%Y-%m-%d')
+            #dataday = datetime.date(int(data[2][:4]), int(data[2][4:6]), int(data[2][6:8]))
+            if (today - dataday).days <= 14:
+                cnt += 1
+                buf_data.append(data)
+        print(str(cnt))
+        for data in buf_data:
+            print(str(data))
 
 if __name__ == '__main__':
     school = School()
     msg_sig = input()
-    verdict = school.verify(msg_sig)
-    if verdict:
-        print('OK')
+    # msg from cdc
+    if msg_sig == "INFECTED":
+        school.send_data_to_cdc()
     else:
-        print('NO')
+        verdict = school.verify(msg_sig)
+        if verdict:
+            print('OK')
+        else:
+            print('NO')
