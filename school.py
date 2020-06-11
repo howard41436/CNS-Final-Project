@@ -73,7 +73,7 @@ class School:
             tmp = f'{data[2][:4]}-{data[2][4:6]}-{data[2][6:8]}'
             dataday = datetime.datetime.strptime(tmp,'%Y-%m-%d')
             #dataday = datetime.date(int(data[2][:4]), int(data[2][4:6]), int(data[2][6:8]))
-            if (today - dataday).days <= 14:
+            if (today - dataday).days <= 14 and (today - dataday).days >= 0:
                 cnt += 1
                 buf_data.append(data)
         print(str(cnt))

@@ -1,8 +1,0 @@
-6/5
-1. Three .py file can socket. cdc.py(server)<--->school.py(client)(server)<--->visitor.py(client)
-2. Define visitor data type in card reader.
-3. Have some trouble with key_gen and object's transfer.
-4. TODO : 
-    (1) school's data management(raw_data / sql).
-    (2) cdc's verify.
-    (3) cdc use signal/socket to raise infected event and send/ask datas to/from school.

@@ -39,14 +39,19 @@ class Cdc:
     def __init__(self):
         self.oracle = Oracle()
         self.school = remote(SCHOOL_IP, SCHOOL_PORT)
+        #self.datas = []
+        self.identity_data_mapped = []
+        self.risk_building_and_timestamp = []
+        self.csvfd = -1
     def read_database(self):
-        return csv.reader(open('database_cdc.csv','r', newline=''))
+        self.csvfd = open('database_cdc.csv','r', newline='') 
+        return csv.reader(self.csvfd)
     def find_patient_footprint(self, data, sickuid):
         signature = data[SIGNATURE_INDEX].strip()
         msg = f'{data[BUILDING_INDEX].strip()}||{data[TIMESTAMP_INDEX].strip()}'
         identifier = objectToBytes(self.oracle.open(msg,signature), self.oracle.group)
         identity = self.oracle.dic[identifier]
-        return (sickuid.count(identity) > 0)
+        return (sickuid.count(identity) > 0), identity
     def waiting_infected_event(self):
         while True:
             msg = input('Type aaa to trigger a infected event !! ')
@@ -54,28 +59,59 @@ class Cdc:
                 self.school.sendline("INFECTED")
                 break
     def recv_school_data(self):
+        header = 'rid, building, timestamp, signature\n'
+        open('database_cdc.csv', 'w').write(header)
         num = int( self.school.recvline().decode().strip() )
         for i in range(num):
-            if not os.path.exists('database_cdc.csv'):
-                header = 'rid, building, timestamp, signature\n'
-                open('database_cdc.csv', 'w').write(header)
             data = self.school.recvline().decode()
+            #self.datas.append(data)
             open('database_cdc.csv', 'a').write(data)
+    def quarantine_policy(self, data, sickuid, i):
+        risk_info =  f'{data[BUILDING_INDEX].strip()} {data[TIMESTAMP_INDEX].strip()[:9]}'
+        return risk_info in self.risk_building_and_timestamp and self.identity_data_mapped[i] not in sickuid
 
 if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print('python cdc.py sick_id_list.txt')
+        exit()
     cdc = Cdc()
     cdc.waiting_infected_event()
     cdc.recv_school_data()
-
+    S = open(sys.argv[1],'r').readline()
+    #sickuid = []
+    sickuid = list(map(int, S.split()))
+    '''
     patient_number = int(input('How many patients today? '))
-    sickuid=[]
     print("please enter the patient's uid: ", end ='')
     for i in range(patient_number):
         sickuid.append(int(input()))
+    '''
     database = cdc.read_database()
     # skip header
     next(database)
+    # find sick people
+    open('patient_footprint_log','w').write('')
     for data in database:
-        danger = cdc.find_patient_footprint(data,sickuid)
+        danger, identity = cdc.find_patient_footprint(data,sickuid)
+        cdc.identity_data_mapped.append(identity)
         if danger:
-            print(f'{data[BUILDING_INDEX]}, {data[TIMESTAMP_INDEX]}')
+            footprint = f'{data[BUILDING_INDEX].strip()} {data[TIMESTAMP_INDEX].strip()}\n'
+            risk_info = f'{data[BUILDING_INDEX].strip()} {data[TIMESTAMP_INDEX].strip()[:9]}'
+            open('patient_footprint_log','a').write(footprint)
+            if risk_info not in cdc.risk_building_and_timestamp:
+                cdc.risk_building_and_timestamp.append(risk_info)
+            #print(footprint)
+    cdc.csvfd.seek(0)
+    next(database)
+    # find quarantine
+    risk_people = []
+    for i, data in enumerate(database):
+       verify = cdc.quarantine_policy(data, sickuid, i)
+       if verify:
+           risk_people.append(cdc.identity_data_mapped[i])
+    #print(cdc.identity_data_mapped)
+    #print(cdc.risk_building_and_timestamp)
+    #print(risk_people)
+    risk_people.sort()
+    
+    open('quarantine_log','w').write( " ".join(str(x) for x in risk_people))

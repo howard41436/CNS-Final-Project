@@ -5,6 +5,7 @@ from pwn import remote
 import sys
 import os
 import time
+import random
 
 BUILDINGS = {1: "DerTian", 2: "MingDa", 3: "XiaoFu"}
 GS_PROTOCOL = 'ShortSig'
@@ -40,12 +41,29 @@ class Student:
         self.school.sendline(payload)
         return self.school.recvline().decode().strip() == 'OK'
 
-    def enter_building(self, build):
-        current_time = gettime()
+    def enter_building(self, build, current_time):
+        #current_time = gettime()
         msg = f'{build}||{current_time}'
         signature = self.oracle.sign(msg)
         verdict = self.authenticate(msg, signature)
         return verdict
+    def gettime(self):
+        # can define by yourself
+        
+        # key by yourself
+        Time = input('%Y%m%d%H%M (12 chars ex.202012290123) ').strip()
+        if len(Time) != 12:
+            exit()
+        # random
+        ''' 
+        a1 = (2020,1,1,0,0,0,0,0,0)
+        a2 = (2020,6,30,23,59,59,0,0,0)
+        start = time.mktime(a1)
+        end = time.mktime(a2)
+        date_touple = time.localtime(random.randint(start, end))
+        Time =  time.strftime("%Y%m%d%H%M", date_touple)
+        '''
+        return Time
 
 if __name__ == '__main__':
     uid = int(input('Please enter your student id: '))
@@ -54,7 +72,8 @@ if __name__ == '__main__':
     for k in BUILDINGS:
         print(f'{k}) {BUILDINGS[k]}')
     building = int(input())
-    verdict = student.enter_building(BUILDINGS[building])
+    current_time = student.gettime()
+    verdict = student.enter_building(BUILDINGS[building], current_time)
     if verdict:
         print('Entered the building successfully.')
     else:
