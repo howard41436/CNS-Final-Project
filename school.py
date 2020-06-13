@@ -9,6 +9,7 @@ import time
 import datetime
 import random
 import csv
+import sqlite3
 
 BUILDINGS = {1: "DerTian", 2: "MingDa", 3: "XiaoFu"}
 GS_PROTOCOL = 'ShortSig'
@@ -42,10 +43,24 @@ class School:
         building, timestamp = msg.split('||')
         rid = random.randrange(RID_MAX)
         new_record = f'{rid}, {building}, {timestamp}, {signature}\n'
+        #SQL
+        if not os.path.exists('database.db'):
+            conn = sqlite3.connect('database.db')
+            c = conn.cursor()
+            c.execute('''CREATE TABLE datas (Rid,Building,Timestamp,Signature)''')
+        else:
+            conn = sqlite3.connect('database.db')
+            c = conn.cursor()
+        c.execute(f"INSERT INTO datas VALUES ({rid},'{building}','{timestamp}','{signature}')")
+        conn.commit()
+        conn.close()
+        
+        '''
         if not os.path.exists('database.csv'):
             header = 'rid, building, timestamp, signature\n'
             open('database.csv', 'w').write(header)
         open('database.csv', 'a').write(new_record)
+        '''
 
     def verify(self, msg_sig):
         msg, signature = msg_sig.split(',')
@@ -54,22 +69,25 @@ class School:
             return True
         else:
             return False
-    
+    ''' 
     def read_database(self):
         return csv.reader(open('database.csv','r', newline=''))
-
+    '''
     def send_data_to_cdc(self):
         current_time = gettime()
         current_time = f'{current_time[:4]}-{current_time[4:6]}-{current_time[6:8]}'
         today = datetime.datetime.strptime(current_time,'%Y-%m-%d')
         #today = datetime.date(int(current_time[:4]), current_time[4:6], int(current_time[6:8]))
-        database = self.read_database()
+        
+        #database = self.read_database()
         # skip header
-        next(database)
+        #next(database)
         buf_data = []
         cnt = 0
-        for data in database:
-            data[2] = data[2].strip()
+        conn = sqlite3.connect('database.db')
+        c = conn.cursor()
+        for data in c.execute("SELECT * FROM datas ORDER BY Timestamp"):
+            #data[2] = data[2].strip()
             tmp = f'{data[2][:4]}-{data[2][4:6]}-{data[2][6:8]}'
             dataday = datetime.datetime.strptime(tmp,'%Y-%m-%d')
             #dataday = datetime.date(int(data[2][:4]), int(data[2][4:6]), int(data[2][6:8]))
@@ -79,6 +97,8 @@ class School:
         print(str(cnt))
         for data in buf_data:
             print(str(data))
+        conn.close()
+        
 
 if __name__ == '__main__':
     school = School()

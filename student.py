@@ -51,18 +51,20 @@ class Student:
         # can define by yourself
         
         # key by yourself
+        '''
         Time = input('%Y%m%d%H%M (12 chars ex.202012290123) ').strip()
         if len(Time) != 12:
             exit()
+        '''
         # random
-        ''' 
+         
         a1 = (2020,1,1,0,0,0,0,0,0)
         a2 = (2020,6,30,23,59,59,0,0,0)
         start = time.mktime(a1)
         end = time.mktime(a2)
         date_touple = time.localtime(random.randint(start, end))
         Time =  time.strftime("%Y%m%d%H%M", date_touple)
-        '''
+        
         return Time
 
 if __name__ == '__main__':
