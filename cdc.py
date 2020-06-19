@@ -1,13 +1,9 @@
-#!/usr/bin/env python3
-from charm.toolbox.pairinggroup import PairingGroup,ZR,G1,G2,GT,pair
-from charm.toolbox.PKSig import PKSig
-from charm.schemes.grpsig.groupsig_bgls04 import *
+from charm.toolbox.pairinggroup import PairingGroup
+from charm.schemes.grpsig.groupsig_bgls04 import ShortSig
 from charm.core.engine.util import objectToBytes, bytesToObject
-from pwn import remote
-import os
+from pwn import remote, context
 import sys
-import socket
-import signal
+import os
 import pickle
 import csv
 
@@ -16,10 +12,9 @@ GS_PROTOCOL = 'ShortSig'
 GROUP = PairingGroup('MNT224')
 SCHOOL_IP = '127.0.0.1'
 SCHOOL_PORT = 8989
-RID_INEDX = 0
-BUILDING_INDEX = 1
-TIMESTAMP_INDEX = 2
-SIGNATURE_INDEX = 3
+BUILDING_INDEX = 0
+TIMESTAMP_INDEX = 1
+SIGNATURE_INDEX = 2
 
 class Oracle:
     def __init__(self):
@@ -35,7 +30,7 @@ class Oracle:
     def open(self, msg, signature):
         signature = bytesToObject(signature, self.group)
         return self.gs_protocol.open(self.gpk, self.gmsk, msg, signature)
-class Cdc:
+class CDC:
     def __init__(self):
         self.oracle = Oracle()
         self.school = remote(SCHOOL_IP, SCHOOL_PORT)
@@ -59,7 +54,7 @@ class Cdc:
                 self.school.sendline("INFECTED")
                 break
     def recv_school_data(self):
-        header = 'rid, building, timestamp, signature\n'
+        header = 'building, timestamp, signature\n'
         open('database_cdc.csv', 'w').write(header)
         num = int( self.school.recvline().decode().strip() )
         for i in range(num):
@@ -72,9 +67,9 @@ class Cdc:
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
-        print('python cdc.py sick_id_list.txt')
+        print('python3 cdc.py sick_id_list.txt')
         exit()
-    cdc = Cdc()
+    cdc = CDC()
     cdc.waiting_infected_event()
     cdc.recv_school_data()
     S = open(sys.argv[1],'r').readline()
