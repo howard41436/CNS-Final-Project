@@ -81,7 +81,7 @@ class CDC:
 
 if __name__ == '__main__':
     cdc = CDC()
-    line = input("Please enter the uid of the patients (separated by comma): ")
+    line = input("Please enter the student id of the patients (separated by comma): ")
     patient_list = list(map(int, line.split(',')))
     patient_footprint, quarantine_list = cdc.trigger_diagnosed_event(patient_list)
     print('Patient footprint:', *patient_footprint, sep = '\n')

@@ -64,9 +64,7 @@ class School:
         else:
             return False
 
-    def send_records(self):
-        today = datetime.now().date()
-
+    def send_records(self, today = datetime.now().date()):
         records = []
         record_cnt = 0
         for record in self.cursor.execute("SELECT * FROM datas ORDER BY Timestamp"):
