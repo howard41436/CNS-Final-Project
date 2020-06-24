@@ -22,14 +22,13 @@ class VLRSig(PKSig):
         T2 = pair(g1_til, g2)
         T3 = pair(g1_hat, g2)
         T4 = pair(g1_hat, w)
-        order = group.order()
         h = [group.random(ZR) for i in range(time)]
         gpk = { 'g1':g1, 'g2':g2, 'g1t':g1_til, 'g1h':g1_hat, 'w':w, 
                 'T1':T1, 'T2':T2, 'T3':T3, 'T4':T4, 'lambda':lamb, 'h':h }
         gmsk = { 'gamma':gamma }
 
         if n==0:
-            return (gpk, gmsk)
+            return (gpk, gmsk, None)
         else:
             f = [group.random(ZR) for i in range(n)]             # User's private key, only stored by user
             F = [g1_til**f[i] for i in range(n)]                 # User's identity, only stored by group manager
@@ -40,7 +39,7 @@ class VLRSig(PKSig):
             return (gpk, gmsk, gsk)
     
     def sign(self, gpk, gsk, j, M):
-        g1, g2, g1h, T2, T3, T4, lamb, h_j = (gpk['g1'], gpk['g2'], gpk['g1h'], gpk['T2'], 
+        g2, g1h, T2, T3, T4, lamb, h_j = (gpk['g2'], gpk['g1h'], gpk['T2'], 
                                             gpk['T3'], gpk['T4'], gpk['lambda'], gpk['h'][j])
         f, A, x = gsk['f'], gsk['A'], gsk['x']
         B = group.random(G1)
@@ -147,11 +146,11 @@ if __name__=='__main__':
     print(valid)
     find_user = vlrsig.open(global_public_key, user_secret_keys, signature, time_period)
     revoke_credential_list.append(find_user['token'])
-    
+
     #tomorrow
     time_period = 1
     revoke_token_list = vlrsig.revoke(global_public_key, revoke_credential_list, time_period)
-    msg = 'Hello World this is a message!'
+    msg = "It's me~"
     signature = vlrsig.sign(global_public_key, user_secret_keys[user], time_period, msg)
     valid = vlrsig.verify(global_public_key, msg, signature, time_period, revoke_token_list)
     print(valid)
