@@ -23,15 +23,7 @@ class VLRSig(PKSig):
         T3 = pair(g1_hat, g2)
         T4 = pair(g1_hat, w)
         order = group.order()
-        want_order = group.init(ZR, (order-1)//2)
-        unit = group.init(ZR, 1)
-        h = []
-        for i in range(time):
-            while True:
-                hh = group.random(ZR)
-                if hh**want_order == unit:
-                    h.append(hh)
-                    break
+        h = [group.random(ZR) for i in range(time)]
         gpk = { 'g1':g1, 'g2':g2, 'g1t':g1_til, 'g1h':g1_hat, 'w':w, 
                 'T1':T1, 'T2':T2, 'T3':T3, 'T4':T4, 'lambda':lamb, 'h':h }
         gmsk = { 'gamma':gamma }
@@ -48,8 +40,8 @@ class VLRSig(PKSig):
             return (gpk, gmsk, gsk)
     
     def sign(self, gpk, gsk, j, M):
-        g1, g2, g1h, T1, T2, T3, T4, lamb, h_j = (gpk['g1'], gpk['g2'], gpk['g1h'], gpk['T1'],          
-                                                gpk['T2'], gpk['T3'], gpk['T4'], gpk['lambda'], gpk['h'][j])
+        g1, g2, g1h, T2, T3, T4, lamb, h_j = (gpk['g1'], gpk['g2'], gpk['g1h'], gpk['T2'], 
+                                            gpk['T3'], gpk['T4'], gpk['lambda'], gpk['h'][j])
         f, A, x = gsk['f'], gsk['A'], gsk['x']
         B = group.random(G1)
         J = B**f
@@ -69,10 +61,6 @@ class VLRSig(PKSig):
         R4 = (K**ra)*(B**(-rb))
         V = [B**r[i] for i in range(lamb)]
         W = [B**(h_j**r[i]) for i in range(lamb)]
-        
-        for i in range(lamb):
-            print(i, V[i])
-        
         c = group.hash((B, J, K, L, T, R1, R2, R3, R4, j, M), ZR)
         d = [c]
         for i in range(lamb):
@@ -87,19 +75,6 @@ class VLRSig(PKSig):
         ba = bitarray.bitarray()
         ba.frombytes(bytes_d)
         s = [int(r[i])-ba[i]*int(x) for i in range(lamb)]
-        Q = h_j**x
-        '''
-        for i in range(lamb):
-            #print(i, ba[i], r[i], s[i]+x)
-            print(i, h_j**(s[i]+x), (h_j**(s[i])*(h_j**x)))
-        
-        #W_ = [L**(h_j**s[i]) for i in range(lamb)]
-        W__ = [((B**(1-ba[i]))*(L**ba[i]))**(h_j**s[i]) for i in range(lamb)]
-        
-        for i in range(lamb):
-            print(i, ba[i], W__[i])
-        '''
-        
         sigma = {'B':B, 'J':J, 'K':K, 'L':L, 'T':T, 'c':c, 
                 'd':d, 'sf':sf, 'sx':sx, 'sa':sa, 'sb':sb, 's':s}
         return sigma
@@ -109,6 +84,7 @@ class VLRSig(PKSig):
                                             gpk['T3'], gpk['T4'], gpk['lambda'], gpk['h'][j])
         B, J, K, L, T, c, d, sf, sx, sa, sb, s = (sigma['B'], sigma['J'], sigma['K'], sigma['L'], sigma['T'], sigma['c'], 
                                                 sigma['d'], sigma['sf'], sigma['sx'], sigma['sa'], sigma['sb'], sigma['s'])
+        order = group.order()
         R1_ = (B**sf)*(J**(-c))
         R2_ = (B**sx)*(K**(-c))
         R3_ = (pair(T, g2)**(-sx))*(T2**sf)*(T3**sb)*(T4**sa)*(T1**c)*(pair(T, w)**(-c))
@@ -121,15 +97,8 @@ class VLRSig(PKSig):
         bytes_d = objectToBytes(d, group)
         ba = bitarray.bitarray()
         ba.frombytes(bytes_d)
-        V_ = [(B**s[i])*(K**ba[i]) for i in range(lamb)]
+        V_ = [(B**(s[i]%order))*(K**ba[i]) for i in range(lamb)]
         W_ = [((B**(1-ba[i]))*(L**ba[i]))**(h_j**s[i]) for i in range(lamb)]
-        
-        for i in range(lamb):
-            print(i, ba[i], V_[i])
-        '''
-        for i in range(lamb):
-            print(i, L**(h_j**s[i]))
-        '''
         d_ = [c]
         for i in range(lamb):
             d_.append(V_[i])
@@ -168,11 +137,9 @@ if __name__=='__main__':
     safe_paremeter = 10
     vlrsig = VLRSig(group)
     (global_public_key, global_master_secret_key, user_secret_keys) = vlrsig.keygen(n, total_time, safe_paremeter)
-    #print(user_secret_keys[user])
     revoke_credential_list = []
     time_period = 0
     time_token = global_public_key['h'][time_period]
-    #print(time_token)
     revoke_token_list = vlrsig.revoke(global_public_key, revoke_credential_list, time_period)
     msg = 'Hello World this is a message!'
     signature = vlrsig.sign(global_public_key, user_secret_keys[user], time_period, msg)
@@ -180,12 +147,12 @@ if __name__=='__main__':
     print(valid)
     find_user = vlrsig.open(global_public_key, user_secret_keys, signature, time_period)
     revoke_credential_list.append(find_user['token'])
+    
     #tomorrow
-    '''
     time_period = 1
     revoke_token_list = vlrsig.revoke(global_public_key, revoke_credential_list, time_period)
     msg = 'Hello World this is a message!'
     signature = vlrsig.sign(global_public_key, user_secret_keys[user], time_period, msg)
     valid = vlrsig.verify(global_public_key, msg, signature, time_period, revoke_token_list)
     print(valid)
-    '''
+    
