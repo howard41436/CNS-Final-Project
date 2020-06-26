@@ -107,13 +107,19 @@ class VLRSig(PKSig):
                 return False
         return True
 
-    def open(self, gpk, tokens, sigma, j):
+    def open(self, gpk, tokens, sigma, j, ids=None):
         h_j = gpk['h'][j]
         B, L = sigma['B'], sigma['L']
-        for i in range(len(tokens)):
-            if L == B**(h_j**tokens[i]):
-                return i
-        return None
+        if ids == None:
+            for i in range(len(tokens)):
+                if L == B**(h_j**tokens[i]):
+                    return i
+            return None
+        else:
+            for i in ids:
+                if L == B**(h_j**tokens[i]):
+                    return i
+            return None
 
     def revoke(self, gpk, tokens, rl, j):
         h_j = gpk['h'][j]

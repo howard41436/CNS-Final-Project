@@ -29,13 +29,13 @@ class Oracle:
             tokens_path = os.path.join(self.path, 'gm/tokens')
             self.tokens = bytesToObject(open(tokens_path, 'rb').read(), self.group)
 
-    def open(self, msg, signature, time_period):
+    def open(self, msg, signature, time_period, patient_list=None):
         signature = bytesToObject(signature, self.group)
         if GS_PROTOCOL == 'ShortSig':
             identifier =  self.gs_protocol.open(self.gpk, self.gmsk, msg, signature)
             identity = self.dic[objectToBytes(identifier, self.group)]
         if GS_PROTOCOL == 'VLRSig':
-            identity = self.gs_protocol.open(self.gpk, self.tokens, signature, time_period)
+            identity = self.gs_protocol.open(self.gpk, self.tokens, signature, time_period, patient_list)
         return identity
 
     def revoke(self, rl, j):
@@ -94,11 +94,18 @@ class CDC:
             current_day = datetime.strptime(timestamp, "%Y%m%d%H%M").date()
             initial_day = datetime.strptime("20200101", "%Y%m%d").date()
             time_period = (current_day - initial_day).days
-            identity = self.oracle.open(msg, signature, time_period)
-            if identity in self.patient_list:
-                self.patient_footprint.append((identity, building, timestamp))
-                dataday = datetime.strptime(timestamp, "%Y%m%d%H%M").date()
-                self.risk_day_building.add((dataday, building))
+            if GS_PROTOCOL == 'ShortSig':
+                identity = self.oracle.open(msg, signature, time_period)
+                if identity in self.patient_list:
+                    self.patient_footprint.append((identity, building, timestamp))
+                    dataday = datetime.strptime(timestamp, "%Y%m%d%H%M").date()
+                    self.risk_day_building.add((dataday, building))
+            elif GS_PROTOCOL == 'VLRSig':
+                identity = self.oracle.open(msg, signature, time_period, patient_list)
+                if identity != None:
+                    self.patient_footprint.append((identity, building, timestamp))
+                    dataday = datetime.strptime(timestamp, "%Y%m%d%H%M").date()
+                    self.risk_day_building.add((dataday, building))
 
     def find_quarantine_list(self):
         quarantine_set = set()

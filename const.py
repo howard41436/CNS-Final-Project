@@ -1,5 +1,6 @@
 from charm.toolbox.pairinggroup import PairingGroup
-BUILDINGS = {1: "DerTian", 2: "MingDa", 3: "XiaoFu"}
+BUILDINGS = {1: "ActivityCenter", 2: "Barry", 3: "CINC", 4: "DerTian", 5: "Gymnasium",
+             6: "LuMing", 7: "MainLibrary", 8: "MingDa", 9: "ShihLiang", 10: "XiaoFu"}
 GS_PROTOCOL = 'VLRSig'
 GROUP = PairingGroup('MNT224')
 BUILDING_INDEX = 0

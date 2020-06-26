@@ -61,8 +61,8 @@ if __name__ == '__main__':
     for k in BUILDINGS:
         print(f'{k}) {BUILDINGS[k]}')
     building = int(input())
-    current_time = input('Please enter the time now (press <ENTER> for current system time): ')
-    if not current_time.strip():
+    current_time = input('Please enter the time now (press <ENTER> for current system time): ').strip()
+    if not current_time:
         current_time = gettime()
     verdict = student.enter_building(BUILDINGS[building], current_time)
     if verdict:
