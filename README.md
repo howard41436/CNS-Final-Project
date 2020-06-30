@@ -50,11 +50,11 @@ python3 key_gen.py
 3. 3rd day (7/2):
 	1. CDC sends revocation list to school.
 	2. Student 1 & 2 & 3 try to enter DerTian(4).
-	$\Rightarrow$ Only student 3 can enter DerTian(4).
+	3. Only student 3 can enter DerTian(4).
 4. 16th day (7/15) (After 13 days):
 	1. CDC sends revocation list to school.
 	2. Student 1 & 2 & 3 try to enter DerTian(4).
-	$\Rightarrow$ Only student 3 can enter DerTian(4).
+	3. Only student 3 can enter DerTian(4).
 5. 17th day (7/16) (After 14 days):
 	1. CDC sends revocation list to school.
 	2. Student 2 can enter DerTian(4) now. (If he/she is not diagnosed.) 
